@@ -1,7 +1,7 @@
-# The initializing constructor looks like an assignment, but it isn’t
-Some time ago, I warned about the perils of the accidental C++ conversion constructor: A single-parameter constructor is considered by default to be a conversion constructor; you can opt out of this by marking the constructor explicit.
+# Инициализирующий конструктор выглядит как присваивание, но это не так.
+Некоторое время назад я предупреждал об опасностях случайного конструктора преобразования C ++: конструктор с одним параметром по умолчанию считается конструктором преобразования; вы можете отказаться от этого, явно отметив конструктор.
 
-I gave as an example this class:
+Я привел в качестве примера этот класс:
 ```
 class Buffer
 {
@@ -10,15 +10,15 @@ public:
   Buffer(std::initializer_list<int> values);
 };
 ```
-The size_t constructor is not marked as explicit, so it is a conversion constructor. And that permits weird things like this:
+Конструктор size_t не помечен как явный, поэтому это конструктор преобразования. И это позволяет делать такие странные вещи:
 ```
 Buffer b = 1; // um...
 ```
-What exactly is happening here?
+Что именно здесь происходит?
 
-A common misconception is that what’s happening is that a temporary Buffer is created (with the capacity 1), and then that temporary buffer is assigned to the destination buffer b.
+Распространенное заблуждение состоит в том, что происходит создание временного буфера (с емкостью 1), а затем этот временный буфер назначается целевому буферу b.
 
-That’s not what’s happening. You can prove this by deleting the assignment operators.
+Это не то, что происходит. Вы можете доказать это, удалив операторы присваивания.
 ```
 class Buffer
 {
@@ -31,36 +31,30 @@ public:
 
 Buffer b = 1; // still compiles
 ```
-(Deleting the move assignment operator is redundant because declaring the copy assignment operator automatically suppresses the implicit move assignment operator. But I deleted it explicitly for emphasis.)
+(Удаление оператора присваивания перемещения излишне, поскольку объявление оператора присваивания копии автоматически подавляет неявный оператор присваивания перемещения. Но я удалил его явно для акцента.)
 
-Even though there is an equal-sign in the statement, there is no actual assignment.
+Несмотря на то, что в заявлении есть знак равенства, фактического присвоения нет.
 
-There can’t be an assignment, if you think about it, because the assignment operator assumes that this refers to an already-constructed object. But we don’t have a constructed object yet.
+Если задуматься, не может быть присваивания, потому что оператор присваивания предполагает, что это относится к уже построенному объекту. Но у нас еще нет построенного объекта.
 
-According to the language rules,
-```
-Buffer b = 1;
-```
-is a copy-initialization, and the copy initialization is performed by taking the thing on the right-hand side and, if the types don’t match,¹ it looks for a conversion constructor.
+Согласно языковым правилам,```Buffer b = 1; - это инициализация копирования, и инициализация копии выполняется путем взятия объекта с правой стороны и, если типы не совпадают, ¹ он ищет конструктор преобразования.```
 
-The equals sign doesn’t mean assignment here. It’s just a quirk of the syntax.
 
-¹ If the types do match, then “the initializer expression is used to initialize the destination object.” At this point copy elision kicks in:
+Знак равенства здесь не означает присвоение. Это просто причуда синтаксиса.
+
+¹ Если типы совпадают, то «выражение инициализатора используется для инициализации целевого объекта». На этом этапе вступает в действие copy elision:
 ```
 extern Buffer get_buffer();
 
 Buffer b = get_buffer();
 ```
-The Buffer returned by get_buffer() is placed directly into the memory occupied by b.
+Буфер, возвращаемый get_buffer (), помещается непосредственно в память, занимаемую b.
 
-Copy elision also means that
-```
-Buffer b = Buffer(1);
-```
-does not create a temporary Buffer of capacity 1, and then construct b from that temporary buffer. Instead, the Buffer of capacity 1 is constructed directly into b. The result is the same as Buffer b(1);.
+Копирование элизии также означает, что ``` Buffer b = Buffer(1); 
+не создает временный буфер емкостью 1, а затем создает b из этого временного буфера. Вместо этого буфер емкости 1 строится непосредственно в b. Результат такой же, как у Buffer b (1) ;.```
 
-Since the copy elision rule can be repeated,
+Поскольку правило исключения копирования может повторяться,
 ```
 Buffer b = Buffer(Buffer(Buffer(1)));
 ```
-is also the same as Buffer b(1);, because each repetition of the rule strips away one of the calls to ```Buffer(...)```.
+то же самое, что Buffer b (1) ;, потому что каждое повторение правила удаляет один из вызовов ```Buffer(...)```.
