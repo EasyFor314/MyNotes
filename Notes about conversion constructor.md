@@ -1,6 +1,6 @@
-# The perils of the accidental C++ conversion constructor
+# Опасности случайного конструктора преобразования C ++
 
-Consider this class:
+Рассмотрим этот класс:
 ```
 class Buffer
 {
@@ -9,28 +9,28 @@ public:
   Buffer(std::initializer_list<int> values);
 };
 ```
-You can create an uninitialized buffer with a particular capacity, or you can create an initialized buffer.
+Вы можете создать неинициализированный буфер определенной емкости или инициализированный буфер.
 
-The one-parameter constructor also serves as a conversion constructor, resulting in the following:
+Однопараметрический конструктор также служит конструктором преобразования, что приводит к следующему:
 ```
 Buffer buffer(24); // create a buffer of size 24
 Buffer buffer({ 1, 3, 5 }); // create an initialized 3-byte buffer
 ```
-Okay, those don’t look too bad. But you also get this:
+Ладно, это не так уж плохо. Но вы также получите это:
 ```
 Buffer buffer = 24; // um...
 Buffer buffer = { 1, 3, 5 };
 ```
-These are equivalent to the first two versions, but you have to admit that the = 24 version looks really weird.
+Они эквивалентны первым двум версиям, но вы должны признать, что версия = 24 выглядит действительно странно.
 
-You also get this:
+Вы также получите это:
 ```
 extern void Send(Buffer const& b);
 Send('c'); // um...
 ```
-This totally compiles, but it doesn’t send the character 'c', which is what it looks like. Instead, it creates an uninitialized buffer of size 0x63 = 99 and sends it.
+Это полностью компилируется, но не отправляет символ «c», как это выглядит. Вместо этого он создает неинициализированный буфер размером 0x63 = 99 и отправляет его.
 
-If this is not what you intended, then you would be well-served to use the explicit keyword to prevent a constructor from being used as conversion constructions.
+Если это не то, что вы намеревались, тогда вам будет полезно использовать ключевое слово explicit, чтобы предотвратить использование конструктора в качестве конструкций преобразования.
 ```
 class Buffer
 {
@@ -39,9 +39,10 @@ public:
   Buffer(std::initializer_list<int> values);
 };
 ```
-I made the first constructor explicit, since I don’t want you to pass an integer where a buffer is expected. However, I left the initializer list as a valid conversion constructor because it seems reasonable to let someone write
+};
+Я сделал первый конструктор явным, так как я не хочу, чтобы вы передавали целое число там, где ожидается буфер. Однако я оставил список инициализаторов как допустимый конструктор преобразования, потому что кажется разумным позволить кому-то написать
 ```
 Send({ 1, 2, 3 });
 ```
-AUTHOR Raymond Chen
-[Article](https://devblogs.microsoft.com/oldnewthing/20210115-00/?p=104719)
+Автор Raymond Chen
+[Ссылка на оригинал статьи](https://devblogs.microsoft.com/oldnewthing/20210115-00/?p=104719)
